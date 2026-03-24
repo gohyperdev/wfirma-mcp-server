@@ -1,5 +1,7 @@
 const BASE_URL = "https://api2.wfirma.pl";
 
+// --- Auth types ---
+
 type AuthApiKey = {
   type: "api_key";
   accessKey: string;
@@ -20,10 +22,41 @@ interface WFirmaConfig {
   companyId?: string;
 }
 
-interface WFirmaResponse {
-  status: { code: string; message?: string };
+// --- API types ---
+
+export interface WFirmaStatus {
+  code: string;
+  message?: string;
+}
+
+export interface WFirmaResponse {
+  status: WFirmaStatus;
+  parameters?: {
+    total?: number;
+    count?: number;
+    page?: number;
+    limit?: number;
+  };
   [key: string]: unknown;
 }
+
+export type Operator = "eq" | "ne" | "gt" | "lt" | "ge" | "le" | "like" | "not like" | "in" | "not in" | "is null" | "is not null";
+
+export interface Condition {
+  field: string;
+  operator: Operator;
+  value?: string | number;
+}
+
+export interface FindParams {
+  conditions?: Condition[];
+  fields?: string[];
+  order?: Record<string, string>;
+  limit?: number;
+  page?: number;
+}
+
+// --- Auth resolution ---
 
 function resolveAuth(): Auth {
   const appKey = process.env.WFIRMA_APP_KEY;
@@ -47,6 +80,8 @@ function resolveAuth(): Auth {
   );
 }
 
+// --- Client ---
+
 export class WFirmaClient {
   private config: WFirmaConfig;
 
@@ -55,6 +90,10 @@ export class WFirmaClient {
       auth: resolveAuth(),
       companyId: process.env.WFIRMA_COMPANY_ID,
     };
+  }
+
+  get authMethod(): string {
+    return this.config.auth.type === "api_key" ? "API Key" : "Basic Auth";
   }
 
   private buildHeaders(): Record<string, string> {
@@ -108,40 +147,54 @@ export class WFirmaClient {
     return data;
   }
 
-  async find(module: string, conditions?: unknown[], fields?: string[], order?: unknown, limit?: number, page?: number) {
+  private buildBody(module: string, params?: FindParams): Record<string, unknown> {
     const parameters: Record<string, unknown> = {};
-    if (conditions?.length) {
-      parameters.conditions = conditions;
-    }
-    if (fields?.length) {
-      parameters.fields = fields;
-    }
-    if (order) {
-      parameters.order = order;
-    }
-    if (limit) {
-      parameters.limit = limit;
-    }
-    if (page) {
-      parameters.page = page;
+
+    if (params?.conditions?.length) {
+      const conditionsObj: Record<string, { condition: Condition }> = {};
+      params.conditions.forEach((cond, i) => {
+        conditionsObj[String(i)] = { condition: cond };
+      });
+      parameters.conditions = conditionsObj;
     }
 
-    return this.request(module, "find", undefined, [{ [module]: {} }, { parameters }]);
+    if (params?.fields?.length) {
+      parameters.fields = params.fields;
+    }
+    if (params?.order) {
+      parameters.order = params.order;
+    }
+    if (params?.limit) {
+      parameters.limit = params.limit;
+    }
+    if (params?.page) {
+      parameters.page = params.page;
+    }
+
+    return { [module]: { parameters } };
   }
 
-  async get(module: string, id: number) {
+  async find(module: string, params: FindParams = {}): Promise<WFirmaResponse> {
+    return this.request(module, "find", undefined, this.buildBody(module, params));
+  }
+
+  async count(module: string, conditions?: Condition[]): Promise<WFirmaResponse> {
+    return this.request(module, "count", undefined, this.buildBody(module, conditions ? { conditions } : undefined));
+  }
+
+  async get(module: string, id: number): Promise<WFirmaResponse> {
     return this.request(module, "get", id);
   }
 
-  async add(module: string, data: unknown) {
-    return this.request(module, "add", undefined, [{ [module]: data }]);
+  async add(module: string, data: unknown): Promise<WFirmaResponse> {
+    return this.request(module, "add", undefined, { [module]: data });
   }
 
-  async edit(module: string, id: number, data: unknown) {
-    return this.request(module, "edit", id, [{ [module]: data }]);
+  async edit(module: string, id: number, data: unknown): Promise<WFirmaResponse> {
+    return this.request(module, "edit", id, { [module]: data });
   }
 
-  async delete(module: string, id: number) {
+  async deleteItem(module: string, id: number): Promise<WFirmaResponse> {
     return this.request(module, "delete", id);
   }
 }

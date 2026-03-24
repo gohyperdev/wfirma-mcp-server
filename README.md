@@ -6,11 +6,23 @@ MCP (Model Context Protocol) server for [wFirma.pl](https://wfirma.pl/) — a Po
 
 | Tool | Description |
 |------|-------------|
-| `expenses_find` | Search expense documents (wydatki) with pagination |
-| `expenses_get` | Get a single expense by ID |
-| `expenses_add` | Create a new expense document |
-| `contractors_find` | Search contractors (kontrahenci) with pagination |
-| `contractors_get` | Get a single contractor by ID |
+| `expenses_find` | Search expenses with filters (accounting_effect, date, type, etc.) |
+| `expenses_get` | Get expense by ID with full details |
+| `expenses_count` | Count expenses matching conditions |
+| `contractors_find` | Search contractors with filters (name, NIP, etc.) |
+| `contractors_get` | Get contractor by ID |
+| `invoices_find` | Search invoices with filters |
+| `invoices_get` | Get invoice by ID |
+| `payments_find` | Search payments |
+| `vat_codes_find` | List available VAT rates |
+| `api_request` | Raw API call for any module/action |
+
+## Resources
+
+| Resource | URI | Description |
+|----------|-----|-------------|
+| Expense Fields | `wfirma://reference/expense-fields` | Reference for expense field values (accounting_effect, type, schema, etc.) |
+| API Modules | `wfirma://reference/api-modules` | Available API modules and their supported actions |
 
 ## Setup
 
@@ -83,6 +95,12 @@ npm test          # Run tests
 
 ```bash
 npx tsx src/test-connection.ts
+```
+
+### MCP Inspector
+
+```bash
+npx @modelcontextprotocol/inspector npx tsx src/index.ts
 ```
 
 ## wFirma API notes
