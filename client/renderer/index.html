@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <title>wFirma MCP</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Title bar -->
+  <div id="titlebar">
+    <span class="titlebar-text">wFirma MCP</span>
+    <div id="titlebar-right">
+      <div id="mode-toggle">
+        <span id="mode-icon">&#128274;</span>
+        <button id="mode-btn" class="mode-readonly" title="Read-only mode">READ</button>
+      </div>
+      <button id="lang-toggle" title="Switch language">PL</button>
+      <div id="connection-indicator">
+        <span id="status-dot"></span>
+        <span id="status-text">Disconnected</span>
+        <button id="reconnect-btn" title="Reconnect">&#x21bb;</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app">
+    <aside id="sidebar">
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading" data-collapse="tools-list"><span class="heading-text">Tools</span></h3>
+        <ul id="tools-list" class="sidebar-list"></ul>
+      </div>
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading" data-collapse="resources-list"><span class="heading-text">Resources</span></h3>
+        <ul id="resources-list" class="sidebar-list"></ul>
+      </div>
+      <div class="sidebar-section">
+        <h3 class="sidebar-heading" data-collapse="history-list"><span class="heading-text">History</span></h3>
+        <ul id="history-list" class="sidebar-list history"></ul>
+      </div>
+    </aside>
+
+    <main id="content">
+      <div id="welcome-panel" class="panel">
+        <h2 id="welcome-title">Welcome</h2>
+        <p id="welcome-text">Select a tool or resource from the sidebar.</p>
+        <p id="welcome-status">Connecting to MCP server...</p>
+      </div>
+
+      <div id="tool-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2 id="tool-name"></h2>
+          <div id="tool-description" class="description"></div>
+        </div>
+        <form id="tool-form"></form>
+        <div class="actions">
+          <button id="execute-btn" type="button">Execute</button>
+        </div>
+        <div id="result-container" class="hidden">
+          <div class="result-header">
+            <h3 id="result-label">Result</h3>
+            <span id="result-timing" class="timing"></span>
+            <span id="result-total" class="result-total"></span>
+            <div class="view-toggle">
+              <button id="view-table-btn" class="view-btn active" title="Table">&#9776;</button>
+              <button id="view-vtable-btn" class="view-btn" title="Vertical">&#9871;</button>
+              <button id="view-json-btn" class="view-btn" title="JSON">{}</button>
+            </div>
+            <div class="export-group">
+              <button id="export-csv-btn" class="export-btn" title="Export CSV">CSV</button>
+              <button id="export-excel-btn" class="export-btn" title="Export Excel">XLS</button>
+              <button id="export-pdf-btn" class="export-btn" title="Export PDF">PDF</button>
+            </div>
+            <button id="copy-btn" title="Copy to clipboard">Copy</button>
+          </div>
+          <div id="result-table-view"></div>
+          <div id="result-vtable-view" class="hidden"></div>
+          <pre id="result-output" class="hidden"></pre>
+        </div>
+      </div>
+
+      <div id="resource-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2 id="resource-name"></h2>
+          <p id="resource-uri" class="description"></p>
+        </div>
+        <div id="resource-loading" class="hidden">
+          <div class="spinner"></div>
+          <span>Loading resource...</span>
+        </div>
+        <div id="resource-result" class="hidden">
+          <div class="result-header">
+            <h3 id="resource-content-label">Content</h3>
+            <button id="resource-copy-btn" title="Copy to clipboard">Copy</button>
+          </div>
+          <pre id="resource-output"></pre>
+        </div>
+      </div>
+
+      <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <span>Executing...</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- Write mode confirmation dialog -->
+  <div id="write-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-icon">&#9888;</div>
+      <h3 id="modal-title">Enable write mode?</h3>
+      <p id="modal-text">Write mode allows creating, editing and deleting data in wFirma. This is a live production system with real financial data. Proceed with caution.</p>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="modal-btn modal-btn-cancel">Cancel</button>
+        <button id="modal-confirm" class="modal-btn modal-btn-danger">Enable write mode</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

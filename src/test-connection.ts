@@ -4,7 +4,7 @@ import { WFirmaClient } from "./wfirma-client.js";
 async function main() {
   try {
     const client = new WFirmaClient();
-    console.log(`Auth method: ${client.authMethod}\n`);
+    console.log("Connecting to wFirma API...\n");
 
     // Count all expenses
     const all = await client.find("expenses", { limit: 1 });

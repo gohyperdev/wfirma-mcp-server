@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createRequire } from "node:module";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { WFirmaClient, type Condition } from "./wfirma-client.js";
+import { WFirmaClient } from "./wfirma-client.js";
+
+// Read version from package.json at runtime to avoid mismatches
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
 
 const server = new McpServer({
   name: "wfirma",
-  version: "0.2.0",
+  version: pkg.version,
 });
 
 let client: WFirmaClient;
@@ -41,10 +46,35 @@ const ConditionSchema = z.object({
   value: z.union([z.string(), z.number()]).optional().describe("Value to compare against"),
 });
 
+/** Inferred type from ConditionSchema — replaces manual Condition casts */
+type ConditionInput = z.infer<typeof ConditionSchema>;
+
 const PaginationSchema = {
-  limit: z.number().optional().describe("Max results per page (default 20)"),
-  page: z.number().optional().describe("Page number (starts at 1)"),
+  limit: z.number().max(200).optional().describe("Max results per page (default 20, max 200)"),
+  page: z.number().min(1).optional().describe("Page number (starts at 1)"),
 };
+
+// --- Module allowlist for api_request ---
+
+const KNOWN_MODULES = new Set([
+  "expenses",
+  "expense_parts",
+  "invoices",
+  "invoice_descriptions",
+  "contractors",
+  "payments",
+  "goods",
+  "series",
+  "notes",
+  "tags",
+  "vat_codes",
+  "company_accounts",
+  "declaration_countries",
+  "translation_languages",
+  "invoice_deliveries",
+]);
+
+const READ_ONLY_ACTIONS = new Set(["find", "get", "count"]);
 
 // ============================================================
 // Resources — static reference data for the AI assistant
@@ -178,12 +208,13 @@ server.tool(
   async ({ conditions, limit, page }) => {
     try {
       const result = await getClient().find("expenses", {
-        conditions: conditions as Condition[] | undefined,
+        conditions,
         limit: limit ?? 20,
         page,
       });
       return jsonResult(result);
     } catch (e) {
+      console.error("expenses_find error:", e);
       return errorResult(e);
     }
   }
@@ -200,6 +231,7 @@ server.tool(
       const result = await getClient().get("expenses", id);
       return jsonResult(result);
     } catch (e) {
+      console.error("expenses_get error:", e);
       return errorResult(e);
     }
   }
@@ -213,9 +245,10 @@ server.tool(
   },
   async ({ conditions }) => {
     try {
-      const result = await getClient().count("expenses", conditions as Condition[] | undefined);
+      const result = await getClient().count("expenses", conditions);
       return jsonResult(result);
     } catch (e) {
+      console.error("expenses_count error:", e);
       return errorResult(e);
     }
   }
@@ -239,12 +272,13 @@ server.tool(
   async ({ conditions, limit, page }) => {
     try {
       const result = await getClient().find("contractors", {
-        conditions: conditions as Condition[] | undefined,
+        conditions,
         limit: limit ?? 20,
         page,
       });
       return jsonResult(result);
     } catch (e) {
+      console.error("contractors_find error:", e);
       return errorResult(e);
     }
   }
@@ -261,6 +295,7 @@ server.tool(
       const result = await getClient().get("contractors", id);
       return jsonResult(result);
     } catch (e) {
+      console.error("contractors_get error:", e);
       return errorResult(e);
     }
   }
@@ -280,12 +315,13 @@ server.tool(
   async ({ conditions, limit, page }) => {
     try {
       const result = await getClient().find("invoices", {
-        conditions: conditions as Condition[] | undefined,
+        conditions,
         limit: limit ?? 20,
         page,
       });
       return jsonResult(result);
     } catch (e) {
+      console.error("invoices_find error:", e);
       return errorResult(e);
     }
   }
@@ -302,6 +338,7 @@ server.tool(
       const result = await getClient().get("invoices", id);
       return jsonResult(result);
     } catch (e) {
+      console.error("invoices_get error:", e);
       return errorResult(e);
     }
   }
@@ -313,7 +350,7 @@ server.tool(
 
 server.tool(
   "payments_find",
-  "Search payments (płatności) in wFirma.",
+  "Search payments (platnosci) in wFirma.",
   {
     conditions: z.array(ConditionSchema).optional().describe("Filter conditions"),
     ...PaginationSchema,
@@ -321,12 +358,13 @@ server.tool(
   async ({ conditions, limit, page }) => {
     try {
       const result = await getClient().find("payments", {
-        conditions: conditions as Condition[] | undefined,
+        conditions,
         limit: limit ?? 20,
         page,
       });
       return jsonResult(result);
     } catch (e) {
+      console.error("payments_find error:", e);
       return errorResult(e);
     }
   }
@@ -347,6 +385,7 @@ server.tool(
       const result = await getClient().find("vat_codes", { limit: limit ?? 50, page });
       return jsonResult(result);
     } catch (e) {
+      console.error("vat_codes_find error:", e);
       return errorResult(e);
     }
   }
@@ -358,7 +397,7 @@ server.tool(
 
 server.tool(
   "api_request",
-  "Make a raw wFirma API request. Use for modules/actions not covered by other tools.",
+  "Make a raw wFirma API request. Use for modules/actions not covered by other tools. By default restricted to read-only actions (find/get/count).",
   {
     module: z.string().describe("API module name, e.g. 'goods', 'series', 'tags'"),
     action: z.enum(["find", "get", "count", "add", "edit", "delete"]).describe("API action"),
@@ -367,9 +406,30 @@ server.tool(
   },
   async ({ module, action, id, body }) => {
     try {
+      if (!KNOWN_MODULES.has(module)) {
+        return errorResult(new Error(
+          `Unknown module "${module}". Known modules: ${[...KNOWN_MODULES].join(", ")}`
+        ));
+      }
+
+      if (!READ_ONLY_ACTIONS.has(action)) {
+        console.error(`api_request: write operation ${module}/${action} requested`);
+      }
+
       const result = await getClient().request(module, action, id, body);
+
+      if (!READ_ONLY_ACTIONS.has(action)) {
+        return {
+          content: [
+            { type: "text" as const, text: `WARNING: Write operation (${action}) executed on module "${module}".` },
+            { type: "text" as const, text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      }
+
       return jsonResult(result);
     } catch (e) {
+      console.error("api_request error:", e);
       return errorResult(e);
     }
   }

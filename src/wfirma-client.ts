@@ -1,24 +1,17 @@
 const BASE_URL = "https://api2.wfirma.pl";
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
 // --- Auth types ---
 
-type AuthApiKey = {
-  type: "api_key";
+interface ApiKeyAuth {
   accessKey: string;
   secretKey: string;
   appKey: string;
-};
-
-type AuthBasic = {
-  type: "basic";
-  login: string;
-  password: string;
-};
-
-type Auth = AuthApiKey | AuthBasic;
+}
 
 interface WFirmaConfig {
-  auth: Auth;
+  auth: ApiKeyAuth;
   companyId?: string;
 }
 
@@ -58,27 +51,23 @@ export interface FindParams {
 
 // --- Auth resolution ---
 
-function resolveAuth(): Auth {
+function resolveAuth(): ApiKeyAuth {
+  const accessKey = process.env.WFIRMA_ACCESS_KEY;
+  const secretKey = process.env.WFIRMA_SECRET_KEY;
   const appKey = process.env.WFIRMA_APP_KEY;
-  if (appKey) {
-    const accessKey = process.env.WFIRMA_ACCESS_KEY;
-    const secretKey = process.env.WFIRMA_SECRET_KEY;
-    if (!accessKey || !secretKey) {
-      throw new Error("WFIRMA_APP_KEY is set but WFIRMA_ACCESS_KEY or WFIRMA_SECRET_KEY is missing.");
-    }
-    return { type: "api_key", accessKey, secretKey, appKey };
+
+  if (!accessKey || !secretKey || !appKey) {
+    throw new Error(
+      "Missing wFirma API key credentials. Set WFIRMA_ACCESS_KEY, WFIRMA_SECRET_KEY, and WFIRMA_APP_KEY environment variables."
+    );
   }
 
-  const login = process.env.WFIRMA_LOGIN;
-  const password = process.env.WFIRMA_PASSWORD;
-  if (login && password) {
-    return { type: "basic", login, password };
-  }
-
-  throw new Error(
-    "Missing wFirma credentials. Set either WFIRMA_APP_KEY + WFIRMA_ACCESS_KEY + WFIRMA_SECRET_KEY, or WFIRMA_LOGIN + WFIRMA_PASSWORD."
-  );
+  return { accessKey, secretKey, appKey };
 }
+
+// --- Module/action name validation ---
+
+const SAFE_NAME_RE = /^[a-z_]+$/;
 
 // --- Client ---
 
@@ -92,23 +81,14 @@ export class WFirmaClient {
     };
   }
 
-  get authMethod(): string {
-    return this.config.auth.type === "api_key" ? "API Key" : "Basic Auth";
-  }
-
   private buildHeaders(): Record<string, string> {
+    const { auth } = this.config;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      accessKey: auth.accessKey,
+      secretKey: auth.secretKey,
+      appKey: auth.appKey,
     };
-
-    const { auth } = this.config;
-    if (auth.type === "api_key") {
-      headers["accessKey"] = auth.accessKey;
-      headers["secretKey"] = auth.secretKey;
-      headers["appKey"] = auth.appKey;
-    } else {
-      headers["Authorization"] = "Basic " + btoa(`${auth.login}:${auth.password}`);
-    }
 
     if (this.config.companyId) {
       headers["companyId"] = this.config.companyId;
@@ -123,6 +103,10 @@ export class WFirmaClient {
     id?: number,
     body?: unknown
   ): Promise<WFirmaResponse> {
+    if (!SAFE_NAME_RE.test(module) || !SAFE_NAME_RE.test(action)) {
+      throw new Error("Invalid module or action name");
+    }
+
     const path = id ? `/${module}/${action}/${id}` : `/${module}/${action}`;
     const url = `${BASE_URL}${path}?inputFormat=json&outputFormat=json`;
 
@@ -130,10 +114,19 @@ export class WFirmaClient {
       method: "POST",
       headers: this.buildHeaders(),
       body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {
-      throw new Error(`wFirma API error: ${response.status} ${response.statusText}`);
+      let errorBody = "";
+      try {
+        errorBody = await response.text();
+      } catch {
+        // ignore read errors
+      }
+      throw new Error(
+        `wFirma API error: ${response.status} ${response.statusText}${errorBody ? ` — ${errorBody}` : ""}`
+      );
     }
 
     const data = (await response.json()) as WFirmaResponse;
@@ -164,10 +157,10 @@ export class WFirmaClient {
     if (params?.order) {
       parameters.order = params.order;
     }
-    if (params?.limit) {
+    if (params?.limit != null) {
       parameters.limit = params.limit;
     }
-    if (params?.page) {
+    if (params?.page != null) {
       parameters.page = params.page;
     }
 
