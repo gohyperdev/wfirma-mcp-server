@@ -13,4 +13,17 @@ contextBridge.exposeInMainWorld("mcp", {
     ipcRenderer.on("connection-status", listener);
     return () => ipcRenderer.removeListener("connection-status", listener);
   },
+  // Company management
+  getCompanies: () => ipcRenderer.invoke("get-companies"),
+  getActiveCompany: () => ipcRenderer.invoke("get-active-company"),
+  setActiveCompany: (id) => ipcRenderer.invoke("set-active-company", id),
+  saveCompany: (company) => ipcRenderer.invoke("save-company", company),
+  deleteCompany: (id) => ipcRenderer.invoke("delete-company", id),
+  getCompanyForEdit: (id) => ipcRenderer.invoke("get-company-for-edit", id),
+  fetchCompanyInfo: () => ipcRenderer.invoke("fetch-company-info"),
+  onActiveCompanyChanged: (callback) => {
+    const listener = (_event, data) => callback(data);
+    ipcRenderer.on("active-company-changed", listener);
+    return () => ipcRenderer.removeListener("active-company-changed", listener);
+  },
 });

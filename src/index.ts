@@ -68,6 +68,8 @@ const KNOWN_MODULES = new Set([
   "notes",
   "tags",
   "vat_codes",
+  "companies",
+  "user_companies",
   "company_accounts",
   "declaration_countries",
   "translation_languages",
@@ -386,6 +388,27 @@ server.tool(
       return jsonResult(result);
     } catch (e) {
       console.error("vat_codes_find error:", e);
+      return errorResult(e);
+    }
+  }
+);
+
+// ============================================================
+// Tools — Company
+// ============================================================
+
+server.tool(
+  "company_info",
+  "Get current company information (name, NIP, tax type, VAT status). Uses companies/find endpoint.",
+  {},
+  async () => {
+    try {
+      const result = await getClient().request("companies", "find", undefined, {
+        companies: { parameters: { limit: 1 } },
+      });
+      return jsonResult(result);
+    } catch (e) {
+      console.error("company_info error:", e);
       return errorResult(e);
     }
   }

@@ -1,5 +1,8 @@
 const { app, BrowserWindow, ipcMain, Menu, shell } = require("electron");
 const path = require("path");
+const fs = require("fs");
+const os = require("os");
+const crypto = require("crypto");
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const {
   StdioClientTransport,
@@ -12,6 +15,80 @@ const {
 const SERVER_CWD = path.resolve(__dirname, "..");
 
 require("dotenv").config({ path: path.join(SERVER_CWD, ".env") });
+
+// ---------------------------------------------------------------------------
+// Config file management
+// ---------------------------------------------------------------------------
+
+const CONFIG_DIR = path.join(os.homedir(), ".wfirma-mcp");
+const CONFIG_PATH = path.join(CONFIG_DIR, "config.json");
+
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
+      const config = JSON.parse(raw);
+      if (!config.companies) config.companies = [];
+      if (!config.activeCompany) config.activeCompany = null;
+      return config;
+    }
+  } catch (err) {
+    console.error("[main] Failed to load config:", err.message);
+  }
+  return { activeCompany: null, companies: [] };
+}
+
+function saveConfig(config) {
+  try {
+    if (!fs.existsSync(CONFIG_DIR)) {
+      fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    }
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
+  } catch (err) {
+    console.error("[main] Failed to save config:", err.message);
+  }
+}
+
+function migrateFromEnv() {
+  const accessKey = process.env.WFIRMA_ACCESS_KEY;
+  const secretKey = process.env.WFIRMA_SECRET_KEY;
+  const appKey = process.env.WFIRMA_APP_KEY;
+  if (!accessKey || !secretKey || !appKey) return null;
+
+  const config = loadConfig();
+  if (config.companies.length > 0) return config;
+
+  const id = crypto.randomUUID();
+  const company = {
+    id,
+    label: "Default (from .env)",
+    accessKey,
+    secretKey,
+    appKey,
+    companyId: process.env.WFIRMA_COMPANY_ID || "",
+    name: "",
+    nip: "",
+  };
+  config.companies.push(company);
+  config.activeCompany = id;
+  saveConfig(config);
+  console.log("[main] Migrated credentials from .env to config");
+  return config;
+}
+
+let appConfig = loadConfig();
+if (appConfig.companies.length === 0) {
+  const migrated = migrateFromEnv();
+  if (migrated) appConfig = migrated;
+}
+
+function getActiveCompany() {
+  if (!appConfig.activeCompany && appConfig.companies.length > 0) {
+    appConfig.activeCompany = appConfig.companies[0].id;
+    saveConfig(appConfig);
+  }
+  return appConfig.companies.find((c) => c.id === appConfig.activeCompany) || null;
+}
 
 // ---------------------------------------------------------------------------
 // MCP Client
@@ -29,6 +106,28 @@ function sendStatus(status, detail) {
   }
 }
 
+function sendActiveCompanyUpdate() {
+  const company = getActiveCompany();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("active-company-changed", company);
+  }
+}
+
+function buildServerEnv(company) {
+  const env = { ...process.env };
+  if (company) {
+    env.WFIRMA_ACCESS_KEY = company.accessKey;
+    env.WFIRMA_SECRET_KEY = company.secretKey;
+    env.WFIRMA_APP_KEY = company.appKey;
+    if (company.companyId) {
+      env.WFIRMA_COMPANY_ID = company.companyId;
+    } else {
+      delete env.WFIRMA_COMPANY_ID;
+    }
+  }
+  return env;
+}
+
 async function connectMcp() {
   const serverCommand =
     process.env.MCP_SERVER_COMMAND || "node";
@@ -39,12 +138,14 @@ async function connectMcp() {
 
   sendStatus("connecting", `${serverCommand} ${serverArgs.join(" ")}`);
 
+  const activeCompany = getActiveCompany();
+
   try {
     mcpTransport = new StdioClientTransport({
       command: serverCommand,
       args: serverArgs,
       cwd: SERVER_CWD,
-      env: { ...process.env },
+      env: buildServerEnv(activeCompany),
     });
 
     mcpClient = new Client({
@@ -55,6 +156,13 @@ async function connectMcp() {
     await mcpClient.connect(mcpTransport);
     sendStatus("connected", `${serverCommand} ${serverArgs.join(" ")}`);
     console.log("[main] MCP client connected");
+
+    // Fetch company info after successful connection
+    if (activeCompany) {
+      fetchCompanyInfo(activeCompany.id).catch((err) =>
+        console.error("[main] Failed to fetch company info:", err.message)
+      );
+    }
   } catch (err) {
     sendStatus("error", err.message);
     console.error("[main] MCP connection failed:", err);
@@ -72,6 +180,45 @@ async function disconnectMcp() {
   mcpClient = null;
   mcpTransport = null;
   sendStatus("disconnected");
+}
+
+async function fetchCompanyInfo(companyId) {
+  if (!mcpClient) return null;
+  try {
+    const result = await mcpClient.callTool({
+      name: "api_request",
+      arguments: { module: "companies", action: "get" },
+    });
+    if (result?.content) {
+      const text = result.content.map((c) => c.text || "").join("\n");
+      try {
+        const data = JSON.parse(text);
+        const companies = data.companies;
+        if (companies) {
+          for (const key of Object.keys(companies)) {
+            if (key === "parameters") continue;
+            const entry = companies[key];
+            const companyData = entry?.company;
+            if (companyData) {
+              const idx = appConfig.companies.findIndex((c) => c.id === companyId);
+              if (idx !== -1) {
+                if (companyData.name) appConfig.companies[idx].name = companyData.name;
+                if (companyData.nip) appConfig.companies[idx].nip = companyData.nip;
+                saveConfig(appConfig);
+                sendActiveCompanyUpdate();
+                return { name: companyData.name, nip: companyData.nip };
+              }
+            }
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+  } catch (err) {
+    console.error("[main] fetchCompanyInfo error:", err.message);
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +265,146 @@ ipcMain.handle("read-resource", async (_event, { uri }) => {
   if (typeof uri !== "string") throw new Error("Invalid resource URI");
   const result = await mcpClient.readResource({ uri });
   return result;
+});
+
+// ---------------------------------------------------------------------------
+// Company management IPC handlers
+// ---------------------------------------------------------------------------
+
+ipcMain.handle("get-companies", () => {
+  return appConfig.companies.map((c) => ({
+    id: c.id,
+    label: c.label,
+    companyId: c.companyId,
+    name: c.name,
+    nip: c.nip,
+    hasCredentials: !!(c.accessKey && c.secretKey && c.appKey),
+  }));
+});
+
+ipcMain.handle("get-active-company", () => {
+  const company = getActiveCompany();
+  if (!company) return null;
+  return {
+    id: company.id,
+    label: company.label,
+    companyId: company.companyId,
+    name: company.name,
+    nip: company.nip,
+    hasCredentials: !!(company.accessKey && company.secretKey && company.appKey),
+  };
+});
+
+ipcMain.handle("set-active-company", async (_event, id) => {
+  if (typeof id !== "string") throw new Error("Invalid company id");
+  const company = appConfig.companies.find((c) => c.id === id);
+  if (!company) throw new Error("Company not found");
+  appConfig.activeCompany = id;
+  saveConfig(appConfig);
+  sendActiveCompanyUpdate();
+  // Reconnect MCP with new credentials
+  await disconnectMcp();
+  await connectMcp();
+  return connectionStatus;
+});
+
+ipcMain.handle("save-company", async (_event, companyData) => {
+  if (!companyData || typeof companyData !== "object") throw new Error("Invalid company data");
+  if (!companyData.label) throw new Error("Label is required");
+  if (!companyData.accessKey || !companyData.secretKey || !companyData.appKey) {
+    throw new Error("API credentials are required");
+  }
+
+  const idx = companyData.id
+    ? appConfig.companies.findIndex((c) => c.id === companyData.id)
+    : -1;
+
+  if (idx !== -1) {
+    // Update existing
+    appConfig.companies[idx] = {
+      ...appConfig.companies[idx],
+      label: companyData.label,
+      accessKey: companyData.accessKey,
+      secretKey: companyData.secretKey,
+      appKey: companyData.appKey,
+      companyId: companyData.companyId || "",
+    };
+  } else {
+    // Add new
+    const id = crypto.randomUUID();
+    appConfig.companies.push({
+      id,
+      label: companyData.label,
+      accessKey: companyData.accessKey,
+      secretKey: companyData.secretKey,
+      appKey: companyData.appKey,
+      companyId: companyData.companyId || "",
+      name: "",
+      nip: "",
+    });
+    if (!appConfig.activeCompany) {
+      appConfig.activeCompany = id;
+    }
+  }
+  saveConfig(appConfig);
+  sendActiveCompanyUpdate();
+  return appConfig.companies.map((c) => ({
+    id: c.id,
+    label: c.label,
+    companyId: c.companyId,
+    name: c.name,
+    nip: c.nip,
+    hasCredentials: !!(c.accessKey && c.secretKey && c.appKey),
+  }));
+});
+
+ipcMain.handle("delete-company", async (_event, id) => {
+  if (typeof id !== "string") throw new Error("Invalid company id");
+  const idx = appConfig.companies.findIndex((c) => c.id === id);
+  if (idx === -1) throw new Error("Company not found");
+  appConfig.companies.splice(idx, 1);
+  if (appConfig.activeCompany === id) {
+    appConfig.activeCompany = appConfig.companies.length > 0
+      ? appConfig.companies[0].id
+      : null;
+    // Reconnect if active company was deleted
+    await disconnectMcp();
+    if (appConfig.activeCompany) {
+      await connectMcp();
+    }
+  }
+  saveConfig(appConfig);
+  sendActiveCompanyUpdate();
+  return appConfig.companies.map((c) => ({
+    id: c.id,
+    label: c.label,
+    companyId: c.companyId,
+    name: c.name,
+    nip: c.nip,
+    hasCredentials: !!(c.accessKey && c.secretKey && c.appKey),
+  }));
+});
+
+ipcMain.handle("get-company-for-edit", (_event, id) => {
+  if (typeof id !== "string") throw new Error("Invalid company id");
+  const company = appConfig.companies.find((c) => c.id === id);
+  if (!company) throw new Error("Company not found");
+  return {
+    id: company.id,
+    label: company.label,
+    accessKey: company.accessKey,
+    secretKey: company.secretKey,
+    appKey: company.appKey,
+    companyId: company.companyId,
+    name: company.name,
+    nip: company.nip,
+  };
+});
+
+ipcMain.handle("fetch-company-info", async () => {
+  const company = getActiveCompany();
+  if (!company) throw new Error("No active company");
+  return fetchCompanyInfo(company.id);
 });
 
 // ---------------------------------------------------------------------------
@@ -179,7 +466,9 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 
   createWindow();
-  await connectMcp();
+  if (getActiveCompany()) {
+    await connectMcp();
+  }
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

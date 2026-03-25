@@ -4,26 +4,50 @@
 
 const I18N = {
   pl: {
-    tools: "Narzędzia", resources: "Zasoby", history: "Historia",
-    welcome: "Witaj", welcomeText: "Wybierz narzędzie lub zasób z panelu bocznego.",
-    connectedMsg: "Połączono z serwerem MCP", connectingMsg: "Łączenie z serwerem MCP...",
-    disconnectedMsg: "Rozłączono", errorMsg: "Błąd połączenia",
-    connected: "Połączono", connecting: "Łączenie...", disconnected: "Rozłączono", error: "Błąd",
-    execute: "Wykonaj", result: "Wynik", content: "Treść",
+    tools: "Narzedzia", resources: "Zasoby", history: "Historia",
+    welcome: "Witaj", welcomeText: "Wybierz narzedzie lub zasob z panelu bocznego.",
+    connectedMsg: "Polaczono z serwerem MCP", connectingMsg: "Laczenie z serwerem MCP...",
+    disconnectedMsg: "Rozlaczono", errorMsg: "Blad polaczenia",
+    connected: "Polaczono", connecting: "Laczenie...", disconnected: "Rozlaczono", error: "Blad",
+    execute: "Wykonaj", result: "Wynik", content: "Tresc",
     copy: "Kopiuj", copied: "Skopiowano!",
-    executing: "Wykonywanie...", loadingResource: "Ładowanie zasobu...",
+    executing: "Wykonywanie...", loadingResource: "Ladowanie zasobu...",
     quickFilters: "Szybkie filtry:", conditions: "Warunki filtrowania",
-    conditionsDesc: "Dodaj warunki filtrowania. Wybierz pole, operator i wartość.",
+    conditionsDesc: "Dodaj warunki filtrowania. Wybierz pole, operator i wartosc.",
     addCondition: "+ Dodaj warunek", fieldPlaceholder: "-- pole --",
-    valuePlaceholder: "wartość", customField: "-- inne (wpisz) --",
+    valuePlaceholder: "wartosc", customField: "-- inne (wpisz) --",
     customFieldPlaceholder: "nazwa pola",
     readOnly: "ODCZYT", writeMode: "ZAPIS",
-    writeModalTitle: "Włączyć tryb zapisu?",
-    writeModalText: "Tryb zapisu umożliwia tworzenie, edycję i usuwanie danych w wFirma. To jest system produkcyjny z prawdziwymi danymi finansowymi. Kontynuuj ostrożnie.",
-    writeModalCancel: "Anuluj", writeModalConfirm: "Włącz tryb zapisu",
-    writeBlocked: "Operacja zapisu zablokowana. Włącz tryb zapisu w pasku tytułowym.",
-    prevPage: "Poprzednia strona", nextPage: "Następna strona",
+    writeModalTitle: "Wlaczyc tryb zapisu?",
+    writeModalText: "Tryb zapisu umozliwia tworzenie, edycje i usuwanie danych w wFirma. To jest system produkcyjny z prawdziwymi danymi finansowymi. Kontynuuj ostroznie.",
+    writeModalCancel: "Anuluj", writeModalConfirm: "Wlacz tryb zapisu",
+    writeBlocked: "Operacja zapisu zablokowana. Wlacz tryb zapisu w pasku tytulowym.",
+    prevPage: "Poprzednia strona", nextPage: "Nastepna strona",
     page: "Strona",
+    // Company / settings
+    settings: "Ustawienia",
+    settingsDesc: "Zarzadzaj konfiguracjami firm wFirma.",
+    addCompany: "+ Dodaj firme",
+    editCompany: "Edytuj",
+    deleteCompany: "Usun",
+    activeLabel: "AKTYWNA",
+    addCompanyTitle: "Dodaj firme",
+    editCompanyTitle: "Edytuj firme",
+    labelField: "Etykieta",
+    accessKeyField: "Access Key",
+    secretKeyField: "Secret Key",
+    appKeyField: "App Key",
+    companyIdField: "Company ID",
+    companyIdDesc: "Opcjonalne. Wymagane tylko dla kont wielofirmowych.",
+    save: "Zapisz",
+    cancel: "Anuluj",
+    deleteModalTitle: "Usunac firme?",
+    deleteModalText: "Czy na pewno chcesz usunac te konfiguracje firmy? Tej operacji nie mozna cofnac.",
+    deleteModalConfirm: "Usun",
+    setupTitle: "Konfiguracja",
+    setupText: "Brak skonfigurowanych firm. Dodaj pierwsza firme wFirma, aby rozpoczac.",
+    noCompany: "Brak firmy",
+    switchCompany: "Przelacz firme",
   },
   en: {
     tools: "Tools", resources: "Resources", history: "History",
@@ -46,16 +70,40 @@ const I18N = {
     writeBlocked: "Write operation blocked. Enable write mode in the title bar.",
     prevPage: "Previous page", nextPage: "Next page",
     page: "Page",
+    // Company / settings
+    settings: "Settings",
+    settingsDesc: "Manage your wFirma company configurations.",
+    addCompany: "+ Add company",
+    editCompany: "Edit",
+    deleteCompany: "Delete",
+    activeLabel: "ACTIVE",
+    addCompanyTitle: "Add company",
+    editCompanyTitle: "Edit company",
+    labelField: "Label",
+    accessKeyField: "Access Key",
+    secretKeyField: "Secret Key",
+    appKeyField: "App Key",
+    companyIdField: "Company ID",
+    companyIdDesc: "Optional. Required only for multi-company accounts.",
+    save: "Save",
+    cancel: "Cancel",
+    deleteModalTitle: "Delete company?",
+    deleteModalText: "Are you sure you want to delete this company configuration? This action cannot be undone.",
+    deleteModalConfirm: "Delete",
+    setupTitle: "Setup",
+    setupText: "No companies configured. Add your first wFirma company to get started.",
+    noCompany: "No company",
+    switchCompany: "Switch company",
   },
 };
 
 const TOOL_NAMES = {
-  pl: { expenses_find: "Szukaj wydatków", expenses_get: "Szczegóły wydatku", expenses_count: "Liczba wydatków", contractors_find: "Szukaj kontrahentów", contractors_get: "Szczegóły kontrahenta", invoices_find: "Szukaj faktur", invoices_get: "Szczegóły faktury", payments_find: "Szukaj płatności", vat_codes_find: "Stawki VAT", api_request: "Zapytanie API" },
+  pl: { expenses_find: "Szukaj wydatkow", expenses_get: "Szczegoly wydatku", expenses_count: "Liczba wydatkow", contractors_find: "Szukaj kontrahentow", contractors_get: "Szczegoly kontrahenta", invoices_find: "Szukaj faktur", invoices_get: "Szczegoly faktury", payments_find: "Szukaj platnosci", vat_codes_find: "Stawki VAT", api_request: "Zapytanie API" },
   en: { expenses_find: "Search expenses", expenses_get: "Expense details", expenses_count: "Count expenses", contractors_find: "Search contractors", contractors_get: "Contractor details", invoices_find: "Search invoices", invoices_get: "Invoice details", payments_find: "Search payments", vat_codes_find: "VAT rates", api_request: "API request" },
 };
 
 const RESOURCE_NAMES = {
-  pl: { "expense-fields": "Pola wydatków", "api-modules": "Moduły API" },
+  pl: { "expense-fields": "Pola wydatkow", "api-modules": "Moduly API" },
   en: { "expense-fields": "Expense fields", "api-modules": "API modules" },
 };
 
@@ -69,8 +117,8 @@ const WFIRMA_FIELDS = {
     { field: "register_vat_book", label: { pl: "VAT/JPK (rejestr VAT)", en: "VAT/JPK (VAT book)" }, values: [{ v: "1", l: { pl: "Tak (1)", en: "Yes (1)" } }, { v: "0", l: { pl: "Nie (0)", en: "No (0)" } }] },
     { field: "type", label: { pl: "Typ dokumentu", en: "Document type" }, values: [{ v: "invoice", l: { pl: "Faktura VAT", en: "VAT invoice" } }, { v: "bill", l: { pl: "Rachunek", en: "Bill" } }, { v: "vat_exempt", l: { pl: "Zwolniony z VAT", en: "VAT exempt" } }] },
     { field: "date", label: { pl: "Data wystawienia", en: "Issue date" }, type: "date" },
-    { field: "payment_method", label: { pl: "Metoda płatności", en: "Payment method" }, values: [{ v: "cash", l: { pl: "Gotówka", en: "Cash" } }, { v: "transfer", l: { pl: "Przelew", en: "Transfer" } }, { v: "compensation", l: { pl: "Kompensata", en: "Compensation" } }, { v: "payment_card", l: { pl: "Karta", en: "Card" } }] },
-    { field: "paymentstate", label: { pl: "Status płatności", en: "Payment status" }, values: [{ v: "paid", l: { pl: "Opłacone", en: "Paid" } }, { v: "unpaid", l: { pl: "Nieopłacone", en: "Unpaid" } }, { v: "partial", l: { pl: "Częściowe", en: "Partial" } }] },
+    { field: "payment_method", label: { pl: "Metoda platnosci", en: "Payment method" }, values: [{ v: "cash", l: { pl: "Gotowka", en: "Cash" } }, { v: "transfer", l: { pl: "Przelew", en: "Transfer" } }, { v: "compensation", l: { pl: "Kompensata", en: "Compensation" } }, { v: "payment_card", l: { pl: "Karta", en: "Card" } }] },
+    { field: "paymentstate", label: { pl: "Status platnosci", en: "Payment status" }, values: [{ v: "paid", l: { pl: "Oplacone", en: "Paid" } }, { v: "unpaid", l: { pl: "Nieoplacone", en: "Unpaid" } }, { v: "partial", l: { pl: "Czesciowe", en: "Partial" } }] },
     { field: "currency", label: { pl: "Waluta", en: "Currency" }, type: "text", placeholder: "PLN" },
     { field: "description", label: { pl: "Opis", en: "Description" }, type: "text" },
     { field: "fullnumber", label: { pl: "Numer dokumentu", en: "Document number" }, type: "text" },
@@ -84,7 +132,7 @@ const WFIRMA_FIELDS = {
   invoices: [
     { field: "type", label: { pl: "Typ", en: "Type" }, values: [{ v: "normal", l: { pl: "Faktura VAT", en: "VAT invoice" } }, { v: "proforma", l: { pl: "Proforma", en: "Proforma" } }] },
     { field: "date", label: { pl: "Data wystawienia", en: "Issue date" }, type: "date" },
-    { field: "paymentstate", label: { pl: "Status płatności", en: "Payment status" }, values: [{ v: "paid", l: { pl: "Opłacone", en: "Paid" } }, { v: "unpaid", l: { pl: "Nieopłacone", en: "Unpaid" } }] },
+    { field: "paymentstate", label: { pl: "Status platnosci", en: "Payment status" }, values: [{ v: "paid", l: { pl: "Oplacone", en: "Paid" } }, { v: "unpaid", l: { pl: "Nieoplacone", en: "Unpaid" } }] },
     { field: "fullnumber", label: { pl: "Numer faktury", en: "Invoice number" }, type: "text" },
   ],
   payments: [
@@ -96,7 +144,7 @@ const PRESETS = {
   expenses_find: [
     { label: { pl: "Tylko JPK (nie w KPiR)", en: "JPK-only (not in KPiR)" }, conditions: [{ field: "register_vat_book", operator: "eq", value: "1" }, { field: "register_tax_book", operator: "eq", value: "0" }] },
     { label: { pl: "KPiR + VAT", en: "KPiR + VAT" }, conditions: [{ field: "register_tax_book", operator: "eq", value: "1" }, { field: "register_vat_book", operator: "eq", value: "1" }] },
-    { label: { pl: "Ostatni miesiąc", en: "Last month" }, get conditions() { return [{ field: "date", operator: "ge", value: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10) }]; } },
+    { label: { pl: "Ostatni miesiac", en: "Last month" }, get conditions() { return [{ field: "date", operator: "ge", value: new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10) }]; } },
   ],
   expenses_count: [
     { label: { pl: "Tylko JPK (nie w KPiR)", en: "JPK-only (not in KPiR)" }, conditions: [{ field: "register_vat_book", operator: "eq", value: "1" }, { field: "register_tax_book", operator: "eq", value: "0" }] },
@@ -122,6 +170,9 @@ let currentTool = null, lastParsedResult = null, lastArgs = null;
 let lang = localStorage.getItem("wfirma-lang") || "pl";
 let writeMode = false;
 let currentView = "table"; // table | vtable | json
+let companiesList = [];
+let activeCompany = null;
+let pendingDeleteId = null;
 
 function t(k) { return I18N[lang]?.[k] ?? I18N.en[k] ?? k; }
 function tl(o) { return typeof o === "string" ? o : o?.[lang] ?? o?.en ?? ""; }
@@ -147,6 +198,20 @@ const resourceLoading = $("#resource-loading"), resourceResult = $("#resource-re
 const viewTableBtn = $("#view-table-btn"), viewVtableBtn = $("#view-vtable-btn"), viewJsonBtn = $("#view-json-btn");
 const writeModal = $("#write-modal"), modalCancel = $("#modal-cancel"), modalConfirm = $("#modal-confirm");
 
+// Company/settings DOM
+const companyNameEl = $("#company-name"), companyNipEl = $("#company-nip");
+const companyDropdownBtn = $("#company-dropdown-btn"), companyDropdown = $("#company-dropdown"), companyDropdownList = $("#company-dropdown-list");
+const settingsBtn = $("#settings-btn");
+const settingsPanel = $("#settings-panel"), settingsCompanyList = $("#settings-company-list");
+const settingsAddBtn = $("#settings-add-btn");
+const setupPanel = $("#setup-panel"), setupAddBtn = $("#setup-add-btn");
+const companyFormContainer = $("#company-form-container"), companyForm = $("#company-form");
+const cfId = $("#cf-id"), cfLabel = $("#cf-label"), cfAccessKey = $("#cf-access-key");
+const cfSecretKey = $("#cf-secret-key"), cfAppKey = $("#cf-app-key"), cfCompanyId = $("#cf-company-id");
+const cfCancel = $("#cf-cancel"), cfSave = $("#cf-save");
+const deleteCompanyModal = $("#delete-company-modal");
+const deleteModalCancel = $("#delete-modal-cancel"), deleteModalConfirm = $("#delete-modal-confirm");
+
 // ---------------------------------------------------------------------------
 // Language
 // ---------------------------------------------------------------------------
@@ -167,7 +232,31 @@ function applyLang() {
   $("#modal-text").textContent = t("writeModalText");
   modalCancel.textContent = t("writeModalCancel");
   modalConfirm.textContent = t("writeModalConfirm");
+  // Settings
+  $("#settings-title").textContent = t("settings");
+  $("#settings-desc").textContent = t("settingsDesc");
+  settingsAddBtn.textContent = t("addCompany");
+  setupAddBtn.textContent = t("addCompany");
+  $("#setup-title").textContent = t("setupTitle");
+  $("#setup-text").textContent = t("setupText");
+  cfCancel.textContent = t("cancel");
+  cfSave.textContent = t("save");
+  // Delete modal
+  $("#delete-modal-title").textContent = t("deleteModalTitle");
+  $("#delete-modal-text").textContent = t("deleteModalText");
+  deleteModalCancel.textContent = t("cancel");
+  deleteModalConfirm.textContent = t("deleteModalConfirm");
+  // Form labels
+  $('label[for="cf-label"]').textContent = t("labelField") + " *";
+  $('label[for="cf-access-key"]').textContent = t("accessKeyField") + " *";
+  $('label[for="cf-secret-key"]').textContent = t("secretKeyField") + " *";
+  $('label[for="cf-app-key"]').textContent = t("appKeyField") + " *";
+  $('label[for="cf-company-id"]').textContent = t("companyIdField");
+  $("#cf-company-id-desc").textContent = t("companyIdDesc");
+
   renderToolsList(); renderResourcesList();
+  renderSettingsCompanyList();
+  updateCompanyDisplay();
 }
 
 langToggle.addEventListener("click", () => {
@@ -200,6 +289,202 @@ function isWriteOperation(toolName, args) {
   if (toolName === "api_request" && args?.action && WRITE_ACTIONS.has(args.action)) return true;
   return false;
 }
+
+// ---------------------------------------------------------------------------
+// Company display & dropdown
+// ---------------------------------------------------------------------------
+function updateCompanyDisplay() {
+  if (activeCompany) {
+    companyNameEl.textContent = activeCompany.name || activeCompany.label || t("noCompany");
+    companyNipEl.textContent = activeCompany.nip ? `NIP: ${activeCompany.nip}` : "";
+  } else {
+    companyNameEl.textContent = t("noCompany");
+    companyNipEl.textContent = "";
+  }
+}
+
+function renderCompanyDropdown() {
+  companyDropdownList.innerHTML = "";
+  for (const c of companiesList) {
+    const li = document.createElement("li");
+    if (activeCompany && c.id === activeCompany.id) li.classList.add("active");
+    const nameText = c.name || c.label;
+    const nipText = c.nip ? ` (NIP: ${c.nip})` : "";
+    li.innerHTML = `<span class="company-dd-label">${escHtml(nameText)}</span><span class="company-dd-info">${escHtml(c.label)}${escHtml(nipText)}</span>`;
+    li.addEventListener("click", async () => {
+      companyDropdown.classList.add("hidden");
+      if (activeCompany && c.id === activeCompany.id) return;
+      try {
+        await window.mcp.setActiveCompany(c.id);
+      } catch (err) {
+        console.error("Failed to switch company:", err);
+      }
+    });
+    companyDropdownList.appendChild(li);
+  }
+}
+
+companyDropdownBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  companyDropdown.classList.toggle("hidden");
+  if (!companyDropdown.classList.contains("hidden")) {
+    renderCompanyDropdown();
+  }
+});
+
+document.addEventListener("click", (e) => {
+  if (!companyDropdown.contains(e.target) && e.target !== companyDropdownBtn) {
+    companyDropdown.classList.add("hidden");
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Settings panel
+// ---------------------------------------------------------------------------
+function showSettingsPanel() {
+  hideAllPanels();
+  settingsPanel.classList.remove("hidden");
+  companyFormContainer.classList.add("hidden");
+  renderSettingsCompanyList();
+}
+
+function hideAllPanels() {
+  welcomePanel.classList.add("hidden");
+  toolPanel.classList.add("hidden");
+  resourcePanel.classList.add("hidden");
+  settingsPanel.classList.add("hidden");
+  setupPanel.classList.add("hidden");
+  clearActive();
+}
+
+function showSetupPanel() {
+  hideAllPanels();
+  setupPanel.classList.remove("hidden");
+}
+
+settingsBtn.addEventListener("click", showSettingsPanel);
+
+function renderSettingsCompanyList() {
+  settingsCompanyList.innerHTML = "";
+  for (const c of companiesList) {
+    const card = document.createElement("div");
+    card.className = "settings-company-card";
+    if (activeCompany && c.id === activeCompany.id) card.classList.add("active-company");
+    const isActive = activeCompany && c.id === activeCompany.id;
+    card.innerHTML = `
+      <div class="settings-company-info">
+        <div class="settings-company-label">${escHtml(c.label)}</div>
+        ${c.name ? `<div class="settings-company-name">${escHtml(c.name)}</div>` : ""}
+        ${c.nip ? `<div class="settings-company-nip">NIP: ${escHtml(c.nip)}</div>` : ""}
+      </div>
+      ${isActive ? `<span class="settings-company-badge">${t("activeLabel")}</span>` : ""}
+      <div class="settings-company-actions">
+        <button class="btn-edit" data-id="${c.id}">${t("editCompany")}</button>
+        <button class="btn-delete" data-id="${c.id}">${t("deleteCompany")}</button>
+      </div>
+    `;
+    card.querySelector(".btn-edit").addEventListener("click", () => openEditCompany(c.id));
+    card.querySelector(".btn-delete").addEventListener("click", () => confirmDeleteCompany(c.id));
+    settingsCompanyList.appendChild(card);
+  }
+}
+
+function openAddCompany() {
+  cfId.value = "";
+  cfLabel.value = "";
+  cfAccessKey.value = "";
+  cfSecretKey.value = "";
+  cfAppKey.value = "";
+  cfCompanyId.value = "";
+  $("#company-form-title").textContent = t("addCompanyTitle");
+  companyFormContainer.classList.remove("hidden");
+}
+
+async function openEditCompany(id) {
+  try {
+    const data = await window.mcp.getCompanyForEdit(id);
+    cfId.value = data.id;
+    cfLabel.value = data.label;
+    cfAccessKey.value = data.accessKey;
+    cfSecretKey.value = data.secretKey;
+    cfAppKey.value = data.appKey;
+    cfCompanyId.value = data.companyId || "";
+    $("#company-form-title").textContent = t("editCompanyTitle");
+    companyFormContainer.classList.remove("hidden");
+  } catch (err) {
+    console.error("Failed to load company for edit:", err);
+  }
+}
+
+function confirmDeleteCompany(id) {
+  pendingDeleteId = id;
+  deleteCompanyModal.classList.remove("hidden");
+}
+
+deleteModalCancel.addEventListener("click", () => {
+  pendingDeleteId = null;
+  deleteCompanyModal.classList.add("hidden");
+});
+
+deleteModalConfirm.addEventListener("click", async () => {
+  if (!pendingDeleteId) return;
+  try {
+    companiesList = await window.mcp.deleteCompany(pendingDeleteId);
+    activeCompany = await window.mcp.getActiveCompany();
+    renderSettingsCompanyList();
+    updateCompanyDisplay();
+    if (companiesList.length === 0) {
+      showSetupPanel();
+    }
+  } catch (err) {
+    console.error("Failed to delete company:", err);
+  }
+  pendingDeleteId = null;
+  deleteCompanyModal.classList.add("hidden");
+});
+
+settingsAddBtn.addEventListener("click", openAddCompany);
+setupAddBtn.addEventListener("click", () => {
+  showSettingsPanel();
+  openAddCompany();
+});
+
+cfCancel.addEventListener("click", () => {
+  companyFormContainer.classList.add("hidden");
+});
+
+companyForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const data = {
+    label: cfLabel.value.trim(),
+    accessKey: cfAccessKey.value.trim(),
+    secretKey: cfSecretKey.value.trim(),
+    appKey: cfAppKey.value.trim(),
+    companyId: cfCompanyId.value.trim(),
+  };
+  if (cfId.value) data.id = cfId.value;
+  try {
+    companiesList = await window.mcp.saveCompany(data);
+    activeCompany = await window.mcp.getActiveCompany();
+    companyFormContainer.classList.add("hidden");
+    renderSettingsCompanyList();
+    updateCompanyDisplay();
+    // If this was the first company and we're not connected, connect
+    if (companiesList.length === 1 && connectionStatus !== "connected") {
+      await window.mcp.connect();
+    }
+  } catch (err) {
+    console.error("Failed to save company:", err);
+    alert(err.message || String(err));
+  }
+});
+
+// Listen for active company changes from main process
+window.mcp.onActiveCompanyChanged((company) => {
+  activeCompany = company;
+  updateCompanyDisplay();
+  renderCompanyDropdown();
+});
 
 // ---------------------------------------------------------------------------
 // Connection
@@ -257,7 +542,7 @@ function getModuleForTool(n) { for (const m of Object.keys(WFIRMA_FIELDS)) { if 
 function selectTool(tool) {
   currentTool = tool; clearActive();
   toolsList.querySelectorAll("li").forEach((li) => { if (li.querySelector(".tool-tech-name")?.textContent === tool.name) li.classList.add("active"); });
-  welcomePanel.classList.add("hidden"); resourcePanel.classList.add("hidden");
+  hideAllPanels();
   toolPanel.classList.remove("hidden"); resultContainer.classList.add("hidden");
   toolNameEl.innerHTML = `${escHtml(TOOL_NAMES[lang]?.[tool.name] || tool.name)} <span class="tool-name-tech">${escHtml(tool.name)}</span>`;
   toolDescEl.innerHTML = formatDescription(tool.description || "");
@@ -271,7 +556,7 @@ function formatDescription(desc) {
     const tr = line.trim();
     if (tr.startsWith("- ")) {
       if (!inList) { html += '<ul class="desc-list">'; inList = true; }
-      let c = escHtml(tr.slice(2)).replace(/^(\w[\w_]*(?:\s*\/\s*\w[\w_]*)*)(\s*[:—–-]\s*)/, "<strong>$1</strong>$2");
+      let c = escHtml(tr.slice(2)).replace(/^(\w[\w_]*(?:\s*\/\s*\w[\w_]*)*)(\s*[:\u2014\u2013-]\s*)/, "<strong>$1</strong>$2");
       html += `<li>${c}</li>`;
     } else {
       if (inList) { html += "</ul>"; inList = false; }
@@ -662,7 +947,7 @@ $("#export-excel-btn").addEventListener("click", () => {
 
 $("#export-pdf-btn").addEventListener("click", () => {
   const d = getExportData(); if (!d) return;
-  let table = `<html><head><meta charset="utf-8"><style>body{font:12px sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}th{background:#f0f0f0;font-size:11px}</style></head><body><h2>wFirma — ${currentTool?.name || "export"}</h2><table><tr>` + d.cols.map((c) => `<th>${escHtml(c)}</th>`).join("") + "</tr>";
+  let table = `<html><head><meta charset="utf-8"><style>body{font:12px sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}th{background:#f0f0f0;font-size:11px}</style></head><body><h2>wFirma -- ${currentTool?.name || "export"}</h2><table><tr>` + d.cols.map((c) => `<th>${escHtml(c)}</th>`).join("") + "</tr>";
   for (const r of d.records) { table += "<tr>" + d.cols.map((c) => `<td>${escHtml(r[c] ?? "")}</td>`).join("") + "</tr>"; }
   table += "</table></body></html>";
   const w = window.open("", "_blank"); w.document.write(table); w.document.close(); w.print();
@@ -673,7 +958,8 @@ $("#export-pdf-btn").addEventListener("click", () => {
 // ---------------------------------------------------------------------------
 async function selectResource(res) {
   clearActive(); resourcesList.querySelectorAll("li").forEach((li) => { if (li.querySelector(".tool-tech-name")?.textContent === res.name) li.classList.add("active"); });
-  welcomePanel.classList.add("hidden"); toolPanel.classList.add("hidden"); resourcePanel.classList.remove("hidden");
+  hideAllPanels();
+  resourcePanel.classList.remove("hidden");
   resourceResult.classList.add("hidden"); resourceLoading.classList.remove("hidden");
   resourceLoading.querySelector("span").textContent = t("loadingResource");
   resourceNameEl.innerHTML = `${escHtml(RESOURCE_NAMES[lang]?.[res.name] || res.name)} <span class="tool-name-tech">${escHtml(res.name)}</span>`;
@@ -740,4 +1026,22 @@ resourceCopyBtn.addEventListener("click", () => { navigator.clipboard.writeText(
 // Init
 // ---------------------------------------------------------------------------
 applyLang(); updateModeUI();
-(async () => { const status = await window.mcp.getConnectionStatus(); updateStatus({ status, detail: "" }); })();
+
+(async () => {
+  // Load companies and active company
+  try {
+    companiesList = await window.mcp.getCompanies();
+    activeCompany = await window.mcp.getActiveCompany();
+    updateCompanyDisplay();
+  } catch (err) {
+    console.error("Failed to load companies:", err);
+  }
+
+  // Show setup panel if no companies configured
+  if (companiesList.length === 0) {
+    showSetupPanel();
+  } else {
+    const status = await window.mcp.getConnectionStatus();
+    updateStatus({ status, detail: "" });
+  }
+})();

@@ -11,7 +11,16 @@
   <!-- Title bar -->
   <div id="titlebar">
     <span class="titlebar-text">wFirma MCP</span>
+    <div id="company-selector">
+      <span id="company-name">&mdash;</span>
+      <span id="company-nip"></span>
+      <button id="company-dropdown-btn" title="Switch company">&#9662;</button>
+      <div id="company-dropdown" class="hidden">
+        <ul id="company-dropdown-list"></ul>
+      </div>
+    </div>
     <div id="titlebar-right">
+      <button id="settings-btn" title="Settings">&#9881;</button>
       <div id="mode-toggle">
         <span id="mode-icon">&#128274;</span>
         <button id="mode-btn" class="mode-readonly" title="Read-only mode">READ</button>
@@ -46,6 +55,13 @@
         <h2 id="welcome-title">Welcome</h2>
         <p id="welcome-text">Select a tool or resource from the sidebar.</p>
         <p id="welcome-status">Connecting to MCP server...</p>
+      </div>
+
+      <!-- Setup screen when no companies configured -->
+      <div id="setup-panel" class="panel hidden">
+        <h2 id="setup-title">Setup</h2>
+        <p id="setup-text">No companies configured. Add your first wFirma company to get started.</p>
+        <button id="setup-add-btn" class="setup-add-btn" type="button">+ Add company</button>
       </div>
 
       <div id="tool-panel" class="panel hidden">
@@ -98,6 +114,49 @@
         </div>
       </div>
 
+      <!-- Settings panel -->
+      <div id="settings-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2 id="settings-title">Settings</h2>
+          <p class="description" id="settings-desc">Manage your wFirma company configurations.</p>
+        </div>
+        <div id="settings-company-list"></div>
+        <button id="settings-add-btn" class="settings-add-btn" type="button">+ Add company</button>
+
+        <!-- Company form (add/edit) -->
+        <div id="company-form-container" class="hidden">
+          <h3 id="company-form-title">Add company</h3>
+          <form id="company-form">
+            <input type="hidden" id="cf-id">
+            <div class="form-field">
+              <label for="cf-label">Label *</label>
+              <input type="text" id="cf-label" placeholder="My Company" required>
+            </div>
+            <div class="form-field">
+              <label for="cf-access-key">Access Key *</label>
+              <input type="text" id="cf-access-key" placeholder="wFirma API Access Key" required>
+            </div>
+            <div class="form-field">
+              <label for="cf-secret-key">Secret Key *</label>
+              <input type="text" id="cf-secret-key" placeholder="wFirma API Secret Key" required>
+            </div>
+            <div class="form-field">
+              <label for="cf-app-key">App Key *</label>
+              <input type="text" id="cf-app-key" placeholder="wFirma API App Key" required>
+            </div>
+            <div class="form-field">
+              <label for="cf-company-id">Company ID</label>
+              <div class="field-desc" id="cf-company-id-desc">Optional. Required only for multi-company accounts.</div>
+              <input type="text" id="cf-company-id" placeholder="Optional">
+            </div>
+            <div class="company-form-actions">
+              <button type="button" id="cf-cancel" class="modal-btn modal-btn-cancel">Cancel</button>
+              <button type="submit" id="cf-save" class="modal-btn modal-btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div id="loading-overlay" class="hidden">
         <div class="spinner"></div>
         <span>Executing...</span>
@@ -114,6 +173,19 @@
       <div class="modal-actions">
         <button id="modal-cancel" class="modal-btn modal-btn-cancel">Cancel</button>
         <button id="modal-confirm" class="modal-btn modal-btn-danger">Enable write mode</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete company confirmation dialog -->
+  <div id="delete-company-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-icon">&#9888;</div>
+      <h3 id="delete-modal-title">Delete company?</h3>
+      <p id="delete-modal-text">Are you sure you want to delete this company configuration? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="delete-modal-cancel" class="modal-btn modal-btn-cancel">Cancel</button>
+        <button id="delete-modal-confirm" class="modal-btn modal-btn-danger">Delete</button>
       </div>
     </div>
   </div>

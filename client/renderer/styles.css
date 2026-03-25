@@ -1145,3 +1145,274 @@ body {
   color: var(--text-secondary);
   font-family: var(--font-mono);
 }
+
+/* ---------- Company selector ---------- */
+#company-selector {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+}
+
+#company-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#company-nip {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+#company-dropdown-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 1px 6px;
+  transition: all 0.2s;
+}
+
+#company-dropdown-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+#company-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 220px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+#company-dropdown-list {
+  list-style: none;
+  padding: 4px 0;
+}
+
+#company-dropdown-list li {
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+#company-dropdown-list li:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+#company-dropdown-list li.active {
+  background: var(--bg-tertiary);
+  color: var(--accent);
+}
+
+.company-dd-label {
+  font-weight: 500;
+}
+
+.company-dd-info {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- Settings button ---------- */
+#settings-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 15px;
+  padding: 2px 6px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+#settings-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ---------- Settings panel ---------- */
+#settings-panel {
+  max-width: 700px;
+}
+
+.settings-company-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color 0.2s;
+}
+
+.settings-company-card.active-company {
+  border-color: var(--accent);
+}
+
+.settings-company-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-company-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-company-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.settings-company-nip {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.settings-company-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: #111;
+  flex-shrink: 0;
+}
+
+.settings-company-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.settings-company-actions button {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 10px;
+  transition: all 0.2s;
+}
+
+.settings-company-actions button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.settings-company-actions button.btn-delete:hover {
+  background: var(--error-bg);
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.settings-add-btn,
+.setup-add-btn {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--accent);
+  cursor: pointer;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+
+.settings-add-btn:hover,
+.setup-add-btn:hover {
+  border-color: var(--accent);
+  background: rgba(79, 195, 247, 0.05);
+}
+
+.setup-add-btn {
+  margin-top: 20px;
+  padding: 12px 28px;
+  font-size: 15px;
+}
+
+/* Company form */
+#company-form-container {
+  margin-top: 20px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+#company-form-container h3 {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+#company-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.company-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modal-btn-primary {
+  background: var(--accent);
+  color: #111;
+  border: none;
+  font-weight: 600;
+}
+
+.modal-btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+/* ---------- Setup panel ---------- */
+#setup-panel h2 {
+  font-size: 24px;
+  margin-bottom: 12px;
+}
+
+#setup-panel p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-size: 14px;
+}

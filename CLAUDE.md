@@ -58,6 +58,7 @@ npx @modelcontextprotocol/inspector      # Visual MCP inspector
 | `invoices_get` | Get invoice by ID |
 | `payments_find` | Search payments |
 | `vat_codes_find` | List available VAT rates |
+| `company_info` | Get current company information (name, NIP, tax type, VAT status) |
 | `api_request` | Generic raw API call for any module/action |
 
 ### MCP Resources
