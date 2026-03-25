@@ -1,0 +1,8 @@
+src/
+client/
+.env
+.env.example
+.mcp.json
+.gitignore
+tsconfig.json
+*.test.ts

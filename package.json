@@ -1,15 +1,41 @@
 {
   "name": "wfirma-mcp-server",
   "version": "0.2.0",
+  "description": "MCP server for wFirma.pl Polish accounting platform",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "wfirma-mcp-server": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "test": "vitest"
+    "test": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "mcp",
+    "wfirma",
+    "accounting",
+    "invoicing",
+    "poland",
+    "kpir",
+    "jpk",
+    "vat"
+  ],
+  "author": "gohyperdev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gohyperdev/wfirma-mcp-server.git"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",

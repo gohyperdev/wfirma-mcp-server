@@ -1,7 +1,13 @@
 {
   "name": "wfirma-mcp-client",
   "version": "1.0.0",
+  "private": true,
   "description": "Electron testing client for wFirma MCP server",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gohyperdev/wfirma-mcp-server.git"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
