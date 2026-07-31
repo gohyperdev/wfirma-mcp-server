@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
+import { createServer as createHttpServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
+import { randomUUID, timingSafeEqual } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { WFirmaClient } from "./wfirma-client.js";
 
@@ -11,10 +17,16 @@ import { WFirmaClient } from "./wfirma-client.js";
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 
-const server = new McpServer({
-  name: "wfirma",
-  version: pkg.version,
-});
+function createMcpServer(): McpServer {
+  const server = new McpServer(
+    {
+      name: "wfirma",
+      version: pkg.version,
+    },
+    {
+      instructions: "Use read-only tools to inspect wFirma data. Before calling api_request with add, edit, or delete, clearly explain the intended change and obtain the user's confirmation.",
+    }
+  );
 
 let client: WFirmaClient;
 
@@ -462,9 +474,175 @@ server.tool(
 // Start server
 // ============================================================
 
+  return server;
+}
+
+const DEFAULT_HOST = "127.0.0.1";
+const DEFAULT_PORT = 3333;
+const DEFAULT_PATH = "/mcp";
+const MAX_REQUEST_BODY_BYTES = 1_000_000;
+
+function getHttpSettings() {
+  const transport = process.env.MCP_TRANSPORT ?? "stdio";
+  if (transport !== "http" && transport !== "https") {
+    if (transport === "stdio") return { transport } as const;
+    throw new Error("MCP_TRANSPORT must be one of: stdio, http, https");
+  }
+
+  const port = Number(process.env.MCP_PORT ?? DEFAULT_PORT);
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error("MCP_PORT must be an integer between 1 and 65535");
+  }
+
+  const path = process.env.MCP_PATH ?? DEFAULT_PATH;
+  if (!path.startsWith("/")) {
+    throw new Error("MCP_PATH must start with '/'");
+  }
+
+  return {
+    transport,
+    host: process.env.MCP_HOST ?? DEFAULT_HOST,
+    port,
+    path,
+    authToken: process.env.MCP_AUTH_TOKEN,
+  } as const;
+}
+
+function jsonRpcError(res: ServerResponse, statusCode: number, message: string) {
+  res.writeHead(statusCode, { "content-type": "application/json" });
+  res.end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32600, message }, id: null }));
+}
+
+function parseJsonBody(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let received = 0;
+
+    req.on("data", (chunk: Buffer) => {
+      received += chunk.length;
+      if (received > MAX_REQUEST_BODY_BYTES) {
+        reject(new Error("Request body is too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+      } catch {
+        reject(new Error("Request body must be valid JSON"));
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function tokenMatches(provided: string | undefined, expected: string) {
+  if (!provided) return false;
+  const providedBytes = Buffer.from(provided);
+  const expectedBytes = Buffer.from(expected);
+  return providedBytes.length === expectedBytes.length && timingSafeEqual(providedBytes, expectedBytes);
+}
+
+async function startHttpServer(settings: Exclude<ReturnType<typeof getHttpSettings>, { transport: "stdio" }>) {
+  const allowedHosts = new Set(
+    (process.env.MCP_ALLOWED_HOSTS ?? "localhost,127.0.0.1,[::1]")
+      .split(",")
+      .map((host) => host.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const transports = new Map<string, StreamableHTTPServerTransport>();
+
+  const requestListener = async (req: IncomingMessage, res: ServerResponse) => {
+    const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+    const requestHost = (req.headers.host ?? "").replace(/:\d+$/, "").toLowerCase();
+
+    if (requestUrl.pathname !== settings.path) {
+      res.writeHead(404).end("Not found");
+      return;
+    }
+    if (!allowedHosts.has(requestHost)) {
+      jsonRpcError(res, 403, "Invalid Host header");
+      return;
+    }
+    if (settings.authToken && !tokenMatches(req.headers.authorization?.replace(/^Bearer\s+/i, ""), settings.authToken)) {
+      res.writeHead(401, { "www-authenticate": "Bearer", "content-type": "application/json" });
+      res.end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32001, message: "Unauthorized" }, id: null }));
+      return;
+    }
+    if (req.method !== "POST" && req.method !== "GET" && req.method !== "DELETE") {
+      res.writeHead(405, { allow: "GET, POST, DELETE" }).end();
+      return;
+    }
+
+    try {
+      const body = req.method === "POST" ? await parseJsonBody(req) : undefined;
+      const sessionId = req.headers["mcp-session-id"];
+      const existingTransport = typeof sessionId === "string" ? transports.get(sessionId) : undefined;
+
+      if (existingTransport) {
+        await existingTransport.handleRequest(req, res, body);
+        return;
+      }
+      if (req.method !== "POST" || !isInitializeRequest(body)) {
+        jsonRpcError(res, 400, "A valid MCP session ID or initialize request is required");
+        return;
+      }
+
+      let transport: StreamableHTTPServerTransport;
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: randomUUID,
+        onsessioninitialized: (newSessionId) => {
+          transports.set(newSessionId, transport);
+        },
+      });
+      transport.onclose = () => {
+        if (transport.sessionId) transports.delete(transport.sessionId);
+      };
+
+      await createMcpServer().connect(transport);
+      await transport.handleRequest(req, res, body);
+    } catch (error) {
+      console.error("MCP HTTP request error:", error);
+      if (!res.headersSent) {
+        jsonRpcError(res, 500, "Internal server error");
+      }
+    }
+  };
+
+  const server = settings.transport === "https"
+    ? createHttpsServer(
+        (() => {
+          const keyPath = process.env.MCP_TLS_KEY_FILE;
+          const certPath = process.env.MCP_TLS_CERT_FILE;
+          if (!keyPath || !certPath) {
+            throw new Error("MCP_TLS_KEY_FILE and MCP_TLS_CERT_FILE are required when MCP_TRANSPORT=https");
+          }
+          return { key: readFileSync(keyPath), cert: readFileSync(certPath) };
+        })(),
+        requestListener
+      )
+    : createHttpServer(requestListener);
+
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(settings.port, settings.host, () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+
+  console.error(`wFirma MCP listening on ${settings.transport}://${settings.host}:${settings.port}${settings.path}`);
+}
+
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  const settings = getHttpSettings();
+  if (settings.transport === "stdio") {
+    await createMcpServer().connect(new StdioServerTransport());
+    return;
+  }
+  await startHttpServer(settings);
 }
 
 main().catch((error) => {

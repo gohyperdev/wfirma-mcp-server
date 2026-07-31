@@ -31,7 +31,7 @@ cp .env.example .env
 # 3. Build
 npm run build
 
-# 4. Add to Claude Desktop or Claude Code (see below)
+# 4. Add to your MCP client, including Codex (see below)
 ```
 
 ## Setup
@@ -96,6 +96,53 @@ claude mcp add wfirma node /absolute/path/to/wfirma-mcp-server/dist/index.js \
   -e WFIRMA_APP_KEY=your_app_key
 ```
 
+## Usage with Codex (local Streamable HTTP/HTTPS)
+
+Codex supports both the existing local **stdio** server and a **Streamable HTTP** server. The HTTP(S) mode below is useful when you want Codex to connect to a server that you start and keep running yourself.
+
+The server binds to `127.0.0.1` by default, so it is not reachable from other machines. It exposes MCP at `/mcp`.
+
+### Start with HTTPS
+
+Create or obtain a certificate trusted by your Mac (for example with [mkcert](https://github.com/FiloSottile/mkcert)), then add to `.env`:
+
+```env
+MCP_TRANSPORT=https
+MCP_HOST=127.0.0.1
+MCP_PORT=3333
+MCP_PATH=/mcp
+MCP_TLS_CERT_FILE=/absolute/path/to/localhost.pem
+MCP_TLS_KEY_FILE=/absolute/path/to/localhost-key.pem
+
+# Recommended even on localhost; use a long random value.
+MCP_AUTH_TOKEN=replace-with-a-long-random-value
+```
+
+Build and start it:
+
+```bash
+npm run build
+MCP_TRANSPORT=https node dist/index.js
+```
+
+In the Codex desktop app: **Settings → MCP servers → Add server → Streamable HTTP**, then use:
+
+```text
+https://127.0.0.1:3333/mcp
+```
+
+If `MCP_AUTH_TOKEN` is set, add it to Codex as the bearer token for this MCP server. Restart Codex after saving the server.
+
+### Local HTTP without TLS
+
+For a server bound only to your own machine, plain HTTP is also supported and avoids certificate setup:
+
+```bash
+MCP_TRANSPORT=http npm run dev
+```
+
+Use `http://127.0.0.1:3333/mcp` in Codex. Do not bind this mode to a network interface unless you also configure a trusted HTTPS certificate and `MCP_AUTH_TOKEN`.
+
 ## Electron Testing Client
 
 The `client/` directory contains an Electron app for interactive testing and debugging of the MCP server. It connects to the MCP server over stdio and provides a GUI to browse tools, call them with parameters, and inspect responses.
@@ -159,7 +206,7 @@ npx @modelcontextprotocol/inspector npx tsx src/index.ts
 
 ## Architecture
 
-- **src/index.ts** -- MCP server entry point. Registers tools, resources, and starts stdio transport.
+- **src/index.ts** -- MCP server entry point. Registers tools and resources, then starts either stdio or local Streamable HTTP(S) transport.
 - **src/wfirma-client.ts** -- HTTP client for wFirma API. Typed conditions/params, auth handling, error handling.
 - **src/test-connection.ts** -- Quick connection test script.
 - **client/** -- Electron testing client for interactive debugging.
