@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
+import { realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -623,11 +624,16 @@ async function main() {
   await server.connect(transport);
 }
 
-const isDirectExecution =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+export function isCliEntrypoint(metaUrl: string, argv1?: string): boolean {
+  if (!argv1) return false;
+  try {
+    return metaUrl === pathToFileURL(realpathSync(argv1)).href;
+  } catch {
+    return false;
+  }
+}
 
-if (isDirectExecution) {
+if (isCliEntrypoint(import.meta.url, process.argv[1])) {
   main().catch((error) => {
     console.error("Fatal error:", error);
     process.exit(1);

@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/server";
-import { createMcpServer } from "./index.js";
+import { createMcpServer, isCliEntrypoint } from "./index.js";
 import { WFirmaClient } from "./wfirma-client.js";
 import { FINANCE_EXPLORER_URI, getFinanceExplorerHtml } from "./ui/finance-explorer.js";
 
@@ -142,9 +146,35 @@ describe("wFirma Finance Explorer MCP App", () => {
     expect(html).toContain("wFirma Finanse Explorer");
     expect(html).toContain("ui/initialize");
     expect(html).toContain("ui/notifications/tool-result");
+    expect(html).toContain("ui/download-file");
+    expect(html).toContain("formatLocalIsoDate");
+    expect(html).toContain("formatCurrencyBreakdown");
+    expect(html).toContain("mergeSingle");
     expect(html).toContain("register_vat_book");
     expect(html).toContain("register_tax_book");
     expect(html).toBe(getFinanceExplorerHtml());
+
+    const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
+    expect(scriptMatch).not.toBeNull();
+    expect(() => new Function(scriptMatch![1])).not.toThrow();
+  });
+
+  it("resolves symlinks in isCliEntrypoint (e.g. npx / npm bin)", () => {
+    const dir = mkdtempSync(join(tmpdir(), "wfirma-cli-test-"));
+    try {
+      const target = join(dir, "index.js");
+      const link = join(dir, "wfirma-mcp-server");
+      writeFileSync(target, "// entry");
+      symlinkSync(target, link);
+
+      const resolvedUrl = pathToFileURL(realpathSync(target)).href;
+      expect(isCliEntrypoint(resolvedUrl, link)).toBe(true);
+      expect(isCliEntrypoint(resolvedUrl, target)).toBe(true);
+      expect(isCliEntrypoint(resolvedUrl, undefined)).toBe(false);
+      expect(isCliEntrypoint(resolvedUrl, join(dir, "missing.js"))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("attaches _meta.ui.resourceUri to invoice, expense, and finance_dashboard tools", async () => {

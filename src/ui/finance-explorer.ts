@@ -785,6 +785,8 @@ export function getFinanceExplorerHtml(): string {
       let displayMode = "inline";
       let sortCol = "date";
       let sortAsc = false;
+      let hostCapabilities = {};
+      let activeToolName = "";
 
       const stateByTab = {
         expenses: { records: [], rawById: {}, page: 1, limit: 20, total: 0, conditions: [] },
@@ -815,12 +817,21 @@ export function getFinanceExplorerHtml(): string {
         return currency ? formatted + " " + escHtml(currency) : formatted;
       }
 
+      function formatLocalIsoDate(d) {
+        return (
+          d.getFullYear() +
+          "-" +
+          String(d.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(d.getDate()).padStart(2, "0")
+        );
+      }
+
       function getMonthRange(offsetMonths) {
         const now = new Date();
         const start = new Date(now.getFullYear(), now.getMonth() + offsetMonths, 1);
         const end = new Date(now.getFullYear(), now.getMonth() + offsetMonths + 1, 0);
-        const fmt = (d) => d.toISOString().slice(0, 10);
-        return { start: fmt(start), end: fmt(end) };
+        return { start: formatLocalIsoDate(start), end: formatLocalIsoDate(end) };
       }
 
       // -----------------------------------------------------------------------
@@ -885,9 +896,20 @@ export function getFinanceExplorerHtml(): string {
         // Notifications from host
         if (data.method === "ui/notifications/tool-input") {
           const args = data.params && data.params.arguments;
+          const targetTab =
+            args && (args.tab === "invoices" || args.tab === "expenses")
+              ? args.tab
+              : activeToolName.startsWith("invoices")
+                ? "invoices"
+                : activeToolName.startsWith("expenses")
+                  ? "expenses"
+                  : activeTab;
           if (args && args.tab && (args.tab === "invoices" || args.tab === "expenses")) {
             activeTab = args.tab;
             renderTabs();
+          }
+          if (args && Array.isArray(args.conditions) && stateByTab[targetTab]) {
+            stateByTab[targetTab].conditions = args.conditions;
           }
         } else if (data.method === "ui/notifications/tool-result") {
           handleIncomingToolResult(data.params);
@@ -907,10 +929,13 @@ export function getFinanceExplorerHtml(): string {
             appInfo: { name: "wFirma Finanse Explorer", version: "0.3.0" },
             appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
           });
+          if (initRes && initRes.hostCapabilities) {
+            hostCapabilities = initRes.hostCapabilities;
+          }
           if (initRes && initRes.hostContext) {
             applyHostContext(initRes.hostContext);
-            const toolName = initRes.hostContext?.toolInfo?.tool?.name || "";
-            if (toolName.startsWith("invoices")) {
+            activeToolName = initRes.hostContext?.toolInfo?.tool?.name || "";
+            if (activeToolName.startsWith("invoices")) {
               activeTab = "invoices";
               renderTabs();
             }
@@ -1047,7 +1072,8 @@ export function getFinanceExplorerHtml(): string {
         }
       }
 
-      function handleIncomingToolResult(result) {
+      function handleIncomingToolResult(result, options) {
+        const mergeSingle = Boolean(options && options.mergeSingle);
         setBanner(null);
         if (!result) return;
         let payload = result.structuredContent || null;
@@ -1092,8 +1118,11 @@ export function getFinanceExplorerHtml(): string {
 
         if (payload.expenses) {
           const extracted = extractModuleRecords(payload.expenses, "expense");
-          // If single get response (1 record with full details), merge into state and open drawer
-          if (extracted.records.length === 1 && stateByTab.expenses.records.length > 0 && !payload.expenses.parameters?.total) {
+          const isSingleGet =
+            extracted.records.length === 1 &&
+            stateByTab.expenses.records.length > 0 &&
+            (mergeSingle || !payload.expenses.parameters?.total);
+          if (isSingleGet) {
             const rec = extracted.records[0];
             stateByTab.expenses.rawById[rec.id] = extracted.rawById[rec.id];
             const idx = stateByTab.expenses.records.findIndex((r) => r.id === rec.id);
@@ -1113,7 +1142,11 @@ export function getFinanceExplorerHtml(): string {
 
         if (payload.invoices) {
           const extracted = extractModuleRecords(payload.invoices, "invoice");
-          if (extracted.records.length === 1 && stateByTab.invoices.records.length > 0 && !payload.invoices.parameters?.total) {
+          const isSingleGet =
+            extracted.records.length === 1 &&
+            stateByTab.invoices.records.length > 0 &&
+            (mergeSingle || !payload.invoices.parameters?.total);
+          if (isSingleGet) {
             const rec = extracted.records[0];
             stateByTab.invoices.rawById[rec.id] = extracted.rawById[rec.id];
             const idx = stateByTab.invoices.records.findIndex((r) => r.id === rec.id);
@@ -1182,7 +1215,7 @@ export function getFinanceExplorerHtml(): string {
             name: toolName,
             arguments: { id: numId },
           });
-          handleIncomingToolResult(res);
+          handleIncomingToolResult(res, { mergeSingle: true });
         } catch (err) {
           setBanner("error", err.message || String(err));
         }
@@ -1335,15 +1368,22 @@ export function getFinanceExplorerHtml(): string {
         });
       }
 
+      function formatCurrencyBreakdown(records, valueFn) {
+        if (!records.length) return formatMoney(0, "PLN");
+        const byCurrency = {};
+        for (const rec of records) {
+          const cur = (rec.currency || "PLN").toUpperCase();
+          byCurrency[cur] = (byCurrency[cur] || 0) + (Number(valueFn(rec)) || 0);
+        }
+        const entries = Object.entries(byCurrency);
+        if (entries.length === 0) return formatMoney(0, "PLN");
+        return entries.map(([cur, sum]) => formatMoney(sum, cur)).join(" + ");
+      }
+
       function renderKpis(filtered) {
         const st = stateByTab[activeTab];
-        const totalNetto = filtered.reduce((acc, r) => acc + r.netto, 0);
-        const totalBrutto = filtered.reduce((acc, r) => acc + r.brutto, 0);
-        const totalVat = totalBrutto - totalNetto;
-        const unpaidCount = filtered.filter((r) => r.paymentstate === "unpaid").length;
-        const unpaidSum = filtered
-          .filter((r) => r.paymentstate === "unpaid")
-          .reduce((acc, r) => acc + (r.remaining || r.brutto), 0);
+        const unpaidList = filtered.filter((r) => r.paymentstate === "unpaid");
+        const unpaidCount = unpaidList.length;
 
         document.getElementById("kpi-count-label").textContent = t("kpiDocs");
         document.getElementById("kpi-count-val").textContent =
@@ -1351,12 +1391,17 @@ export function getFinanceExplorerHtml(): string {
         document.getElementById("kpi-count-sub").textContent = t("kpiInView");
 
         document.getElementById("kpi-netto-label").textContent = t("kpiNetto");
-        document.getElementById("kpi-netto-val").textContent = formatMoney(totalNetto, "PLN");
+        document.getElementById("kpi-netto-val").textContent = formatCurrencyBreakdown(filtered, (r) => r.netto);
         document.getElementById("kpi-netto-sub").textContent = t("kpiPageSum");
 
         document.getElementById("kpi-brutto-label").textContent = t("kpiBrutto");
-        document.getElementById("kpi-brutto-val").textContent = formatMoney(totalBrutto, "PLN");
-        document.getElementById("kpi-brutto-sub").textContent = "VAT: " + formatMoney(totalVat, "PLN");
+        document.getElementById("kpi-brutto-val").textContent = formatCurrencyBreakdown(filtered, (r) => r.brutto);
+        document.getElementById("kpi-brutto-sub").textContent =
+          "VAT: " + formatCurrencyBreakdown(filtered, (r) => r.brutto - r.netto);
+
+        const unpaidFormatted = unpaidCount
+          ? formatCurrencyBreakdown(unpaidList, (r) => r.remaining || r.brutto)
+          : formatMoney(0, "PLN");
 
         if (activeTab === "expenses") {
           const jpkOnlyCount = filtered.filter(
@@ -1365,11 +1410,11 @@ export function getFinanceExplorerHtml(): string {
           document.getElementById("kpi-diag-label").textContent = t("kpiJpkDiag");
           document.getElementById("kpi-diag-val").textContent = String(jpkOnlyCount);
           document.getElementById("kpi-diag-sub").textContent =
-            t("unpaid") + ": " + unpaidCount + " (" + formatMoney(unpaidSum, "PLN") + ")";
+            t("unpaid") + ": " + unpaidCount + " (" + unpaidFormatted + ")";
         } else {
           document.getElementById("kpi-diag-label").textContent = t("kpiUnpaidDiag");
           document.getElementById("kpi-diag-val").textContent = String(unpaidCount);
-          document.getElementById("kpi-diag-sub").textContent = formatMoney(unpaidSum, "PLN");
+          document.getElementById("kpi-diag-sub").textContent = unpaidFormatted;
         }
       }
 
@@ -1697,8 +1742,37 @@ export function getFinanceExplorerHtml(): string {
       }
 
       // -----------------------------------------------------------------------
-      // Export CSV / XLS
+      // Export CSV / XLS (MCP Apps ui/download-file + browser fallback)
       // -----------------------------------------------------------------------
+      async function triggerDownload(content, filename, mimeType) {
+        if (hostCapabilities && hostCapabilities.downloadFile) {
+          try {
+            const res = await sendRpcRequest("ui/download-file", {
+              contents: [
+                {
+                  type: "resource",
+                  resource: {
+                    uri: "file:///" + filename,
+                    mimeType,
+                    text: content,
+                  },
+                },
+              ],
+            });
+            if (!res || !res.isError) return;
+          } catch (err) {
+            console.debug("ui/download-file failed, falling back to Blob download:", err);
+          }
+        }
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
       function exportCsv() {
         const rows = getFilteredRecords();
         if (!rows.length) return;
@@ -1708,13 +1782,7 @@ export function getFinanceExplorerHtml(): string {
           headers.join(","),
           ...rows.map((r) => headers.map((h) => esc(r[h])).join(",")),
         ].join("\\n");
-        const blob = new Blob(["\\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "wfirma_" + activeTab + ".csv";
-        a.click();
-        URL.revokeObjectURL(url);
+        triggerDownload("\\uFEFF" + csv, "wfirma_" + activeTab + ".csv", "text/csv;charset=utf-8");
       }
 
       function exportXls() {
@@ -1735,13 +1803,7 @@ export function getFinanceExplorerHtml(): string {
           '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>' +
           table +
           "</body></html>";
-        const blob = new Blob([html], { type: "application/vnd.ms-excel" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "wfirma_" + activeTab + ".xls";
-        a.click();
-        URL.revokeObjectURL(url);
+        triggerDownload(html, "wfirma_" + activeTab + ".xls", "application/vnd.ms-excel");
       }
 
       // -----------------------------------------------------------------------
