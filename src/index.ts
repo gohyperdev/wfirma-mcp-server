@@ -1,22 +1,34 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
+import { realpathSync } from "node:fs";
 import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  registerAppResource,
+  registerAppTool,
+  RESOURCE_MIME_TYPE,
+} from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { WFirmaClient } from "./wfirma-client.js";
+import {
+  FINANCE_EXPLORER_URI,
+  getFinanceExplorerHtml,
+} from "./ui/finance-explorer.js";
 
 // Read version from package.json at runtime to avoid mismatches
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 
+export function createMcpServer(customClient?: WFirmaClient): McpServer {
 const server = new McpServer({
   name: "wfirma",
   version: pkg.version,
 });
 
-let client: WFirmaClient;
+let client: WFirmaClient | undefined = customClient;
 
 function getClient(): WFirmaClient {
   if (!client) {
@@ -195,17 +207,57 @@ server.resource(
 );
 
 // ============================================================
+// MCP Apps UI Resource — Interactive Finance Explorer
+// ============================================================
+
+registerAppResource(
+  server,
+  "finance-explorer",
+  FINANCE_EXPLORER_URI,
+  {
+    title: "wFirma Finanse Explorer",
+    description:
+      "Interactive MCP App for reviewing wFirma sales invoices and expenses (including JPK-only vs KPiR diagnostics, VAT breakdown, and CSV/XLS export).",
+    mimeType: RESOURCE_MIME_TYPE,
+  },
+  async () => ({
+    contents: [
+      {
+        uri: FINANCE_EXPLORER_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: getFinanceExplorerHtml(),
+        _meta: {
+          ui: {
+            prefersBorder: true,
+          },
+        },
+      },
+    ],
+  })
+);
+
+// ============================================================
 // Tools — Expenses
 // ============================================================
 
-server.tool(
+registerAppTool(
+  server,
   "expenses_find",
-  "Search expenses (wydatki) in wFirma with filters. Use conditions to filter by accounting_effect, date, type, etc.",
   {
-    conditions: z.array(ConditionSchema).optional().describe(
-      "Filter conditions. Example: [{field: 'accounting_effect', operator: 'eq', value: 'vat'}] to find JPK-only expenses"
-    ),
-    ...PaginationSchema,
+    title: "Search Expenses",
+    description:
+      "Search expenses (wydatki) in wFirma with filters and open the interactive Finance Explorer UI. Use conditions to filter by register_vat_book, register_tax_book, date, type, paymentstate, etc.",
+    inputSchema: {
+      conditions: z.array(ConditionSchema).optional().describe(
+        "Filter conditions. Example: [{field: 'register_vat_book', operator: 'eq', value: '1'}, {field: 'register_tax_book', operator: 'eq', value: '0'}] to find JPK-only expenses"
+      ),
+      ...PaginationSchema,
+    },
+    _meta: {
+      ui: {
+        resourceUri: FINANCE_EXPLORER_URI,
+      },
+    },
   },
   async ({ conditions, limit, page }) => {
     try {
@@ -222,11 +274,21 @@ server.tool(
   }
 );
 
-server.tool(
+registerAppTool(
+  server,
   "expenses_get",
-  "Get a single expense document by ID, including all details (expense_parts, contractor, payments).",
   {
-    id: z.number().describe("Expense document ID"),
+    title: "Get Expense Details",
+    description:
+      "Get a single expense document by ID, including all details (expense_parts, contractor, payments), and inspect it in the Finance Explorer UI.",
+    inputSchema: {
+      id: z.number().describe("Expense document ID"),
+    },
+    _meta: {
+      ui: {
+        resourceUri: FINANCE_EXPLORER_URI,
+      },
+    },
   },
   async ({ id }) => {
     try {
@@ -307,12 +369,22 @@ server.tool(
 // Tools — Invoices
 // ============================================================
 
-server.tool(
+registerAppTool(
+  server,
   "invoices_find",
-  "Search invoices (faktury) in wFirma. Filter by date, type, contractor, etc.",
   {
-    conditions: z.array(ConditionSchema).optional().describe("Filter conditions"),
-    ...PaginationSchema,
+    title: "Search Sales Invoices",
+    description:
+      "Search sales invoices (faktury) in wFirma and open the interactive Finance Explorer UI. Filter by date, type, contractor, paymentstate, etc.",
+    inputSchema: {
+      conditions: z.array(ConditionSchema).optional().describe("Filter conditions"),
+      ...PaginationSchema,
+    },
+    _meta: {
+      ui: {
+        resourceUri: FINANCE_EXPLORER_URI,
+      },
+    },
   },
   async ({ conditions, limit, page }) => {
     try {
@@ -329,11 +401,21 @@ server.tool(
   }
 );
 
-server.tool(
+registerAppTool(
+  server,
   "invoices_get",
-  "Get a single invoice by ID.",
   {
-    id: z.number().describe("Invoice ID"),
+    title: "Get Sales Invoice Details",
+    description:
+      "Get a single sales invoice by ID and inspect its line items and payment status in the Finance Explorer UI.",
+    inputSchema: {
+      id: z.number().describe("Invoice ID"),
+    },
+    _meta: {
+      ui: {
+        resourceUri: FINANCE_EXPLORER_URI,
+      },
+    },
   },
   async ({ id }) => {
     try {
@@ -341,6 +423,77 @@ server.tool(
       return jsonResult(result);
     } catch (e) {
       console.error("invoices_get error:", e);
+      return errorResult(e);
+    }
+  }
+);
+
+// ============================================================
+// Tools — Finance Dashboard (MCP App Entry Point)
+// ============================================================
+
+registerAppTool(
+  server,
+  "finance_dashboard",
+  {
+    title: "Open wFirma Finance Explorer",
+    description:
+      "Open the interactive wFirma Finance Explorer MCP App preloaded with recent expenses, sales invoices, and company info. Ideal for reviewing costs, JPK-only vs KPiR booking, and unpaid invoices.",
+    inputSchema: {
+      tab: z
+        .enum(["expenses", "invoices"])
+        .optional()
+        .describe("Initial tab to display ('expenses' or 'invoices')"),
+      limit: z
+        .number()
+        .max(200)
+        .optional()
+        .describe("Number of records per tab to preload (default 20)"),
+      conditions: z
+        .array(ConditionSchema)
+        .optional()
+        .describe("Optional filter conditions applied to the initial tab"),
+    },
+    _meta: {
+      ui: {
+        resourceUri: FINANCE_EXPLORER_URI,
+      },
+    },
+  },
+  async ({ tab, limit, conditions }) => {
+    try {
+      const activeTab = tab ?? "expenses";
+      const pageLimit = limit ?? 20;
+      const api = getClient();
+
+      const [expensesRes, invoicesRes, companyRes] = await Promise.all([
+        api.find("expenses", {
+          conditions: activeTab === "expenses" ? conditions : undefined,
+          limit: pageLimit,
+          page: 1,
+        }),
+        api.find("invoices", {
+          conditions: activeTab === "invoices" ? conditions : undefined,
+          limit: pageLimit,
+          page: 1,
+        }),
+        api
+          .request("companies", "find", undefined, {
+            companies: { parameters: { limit: 1 } },
+          })
+          .catch(() => null),
+      ]);
+
+      return jsonResult({
+        dashboard: {
+          tab: activeTab,
+          company: companyRes,
+          expenses: expensesRes,
+          invoices: invoicesRes,
+        },
+      });
+    } catch (e) {
+      console.error("finance_dashboard error:", e);
       return errorResult(e);
     }
   }
@@ -458,16 +611,31 @@ server.tool(
   }
 );
 
+  return server;
+}
+
 // ============================================================
 // Start server
 // ============================================================
 
 async function main() {
+  const server = createMcpServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
 
-main().catch((error) => {
-  console.error("Fatal error:", error);
-  process.exit(1);
-});
+export function isCliEntrypoint(metaUrl: string, argv1?: string): boolean {
+  if (!argv1) return false;
+  try {
+    return metaUrl === pathToFileURL(realpathSync(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isCliEntrypoint(import.meta.url, process.argv[1])) {
+  main().catch((error) => {
+    console.error("Fatal error:", error);
+    process.exit(1);
+  });
+}

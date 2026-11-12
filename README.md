@@ -9,6 +9,7 @@ MCP (Model Context Protocol) server for [wFirma.pl](https://wfirma.pl/) -- a Pol
 ## Features
 
 - Connects AI assistants (Claude Desktop, Claude Code, etc.) to your wFirma account via the [wFirma API](https://doc.wfirma.pl/)
+- **Interactive MCP App (`ui://wfirma/finance-explorer`)** -- opens an inline / fullscreen Finance Explorer directly inside Claude when reviewing sales invoices or expenses (with KPI cards, 1-click **JPK-only vs KPiR** filter presets, slide-over VAT/line-item inspector, and CSV/XLS export)
 - Search and retrieve expenses, invoices, contractors, payments, and VAT codes
 - Count and filter documents using flexible conditions with typed operators
 - Get company information for multi-company accounts
@@ -116,13 +117,14 @@ The client supports multi-company management -- you can configure multiple wFirm
 
 | Tool | Description |
 |------|-------------|
-| `expenses_find` | Search expenses with filters (accounting_effect, date, type, etc.) |
-| `expenses_get` | Get expense by ID with full details |
+| `finance_dashboard` | Open interactive **wFirma Finance Explorer** MCP App preloaded with expenses, invoices, and company info |
+| `expenses_find` | Search expenses with filters (`register_vat_book`, `register_tax_book`, `date`, `type`, etc.) — linked to MCP App |
+| `expenses_get` | Get expense by ID with full details (`expense_parts`, contractor, payments) — linked to MCP App |
 | `expenses_count` | Count expenses matching conditions |
 | `contractors_find` | Search contractors with filters (name, NIP, etc.) |
 | `contractors_get` | Get contractor by ID |
-| `invoices_find` | Search invoices with filters |
-| `invoices_get` | Get invoice by ID |
+| `invoices_find` | Search sales invoices with filters — linked to MCP App |
+| `invoices_get` | Get sales invoice by ID — linked to MCP App |
 | `payments_find` | Search payments |
 | `vat_codes_find` | List available VAT rates |
 | `company_info` | Get current company information (name, NIP, tax type, VAT status) |
@@ -132,7 +134,8 @@ The client supports multi-company management -- you can configure multiple wFirm
 
 | Resource | URI | Description |
 |----------|-----|-------------|
-| Expense Fields | `wfirma://reference/expense-fields` | Reference for expense field values (accounting_effect, type, schema, etc.) |
+| Finance Explorer (MCP App) | `ui://wfirma/finance-explorer` | Interactive HTML/JS MCP App (`text/html;profile=mcp-app`) for reviewing invoices and expenses inside Claude |
+| Expense Fields | `wfirma://reference/expense-fields` | Reference for expense field values (`register_tax_book`, `register_vat_book`, `type`, `schema`, etc.) |
 | API Modules | `wfirma://reference/api-modules` | Available API modules and their supported actions |
 
 ## Development
